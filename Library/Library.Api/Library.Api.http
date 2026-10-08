@@ -1,6 +1,31 @@
-@Library.Api_HostAddress = http://localhost:5151
+@host = http://localhost:5100
 
-GET {{Library.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Values read from configuration
+GET {{host}}/api/books?genre=Classic
 
 ###
+GET {{host}}/api/authors/1
+
+###
+GET {{host}}/api/stats/books-per-genre
+
+###
+POST {{host}}/api/books
+Content-Type: application/json
+
+{
+  "title": "Homage to Catalonia",
+  "year": 1938,
+  "authorId": 1,
+  "genreIds": [2]
+}
+
+###
+POST {{host}}/api/books
+Content-Type: application/json
+
+{
+  "title": "Ghost book",
+  "year": 2000,
+  "authorId": 999,
+}
