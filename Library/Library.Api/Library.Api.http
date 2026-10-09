@@ -1,31 +1,46 @@
 @host = http://localhost:5100
 
-### Values read from configuration
-GET {{host}}/api/books?genre=Classic
-
-###
-GET {{host}}/api/authors/1
-
-###
-GET {{host}}/api/stats/books-per-genre
-
-###
+### Command: add a book (returns only the id)
 POST {{host}}/api/books
 Content-Type: application/json
 
-{
-  "title": "Homage to Catalonia",
-  "year": 1938,
-  "authorId": 1,
-  "genreIds": [2]
-}
+{ "title": "Dune", "year": 1965, "authorId": 2, "genreIds": [3] }
 
-###
-POST {{host}}/api/books
+### Query: books in a genre
+GET {{host}}/api/books?genre=Fantasy
+
+### Ada borrows Nineteen Eighty-Four (201)
+POST {{host}}/api/loans
 Content-Type: application/json
 
-{
-  "title": "Ghost book",
-  "year": 2000,
-  "authorId": 999,
-}
+{ "memberId": 1, "bookId": 1 }
+
+### Alan tries the same book (409: already on loan)
+POST {{host}}/api/loans
+Content-Type: application/json
+
+{ "memberId": 2, "bookId": 1 }
+
+### Ada borrows Animal Farm (201), then The Hobbit (409: limit 2)
+POST {{host}}/api/loans
+Content-Type: application/json
+
+{ "memberId": 1, "bookId": 2 }
+
+###
+POST {{host}}/api/loans
+Content-Type: application/json
+
+{ "memberId": 1, "bookId": 3 }
+
+### Return loan 1 (200), then again (409)
+POST {{host}}/api/loans/1/return
+
+###
+POST {{host}}/api/loans/1/return
+
+### Query: Ada's open loans
+GET {{host}}/api/members/1/loans?openOnly=true
+
+### A member that does not exist (404)
+GET {{host}}/api/members/9/loans
