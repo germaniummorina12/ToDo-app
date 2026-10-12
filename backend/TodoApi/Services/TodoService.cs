@@ -4,45 +4,32 @@ using TodoApi.Models;
 
 namespace TodoApi.Services;
 
-public class TodoService : ITodoService
+public class TodoService(AppDbContext db, TimeProvider clock) : ITodoService
 {
     private const int MaxTitleLength = 200;
-    private readonly AppDbContext _db;
 
-    public TodoService(AppDbContext db)
-    {
-        _db = db;
-    }
+    public async Task<IReadOnlyList<TodoItem>> GetAllAsync(CancellationToken ct = default) =>
+        await db.Todos.AsNoTracking().OrderBy(t => t.Id).ToListAsync(ct);
 
-    public async Task<IReadOnlyList<TodoItem>> GetAllAsync()
-    {
-        return await _db.Todos
-            .AsNoTracking()
-            .OrderBy(t => t.Id)
-            .ToListAsync();
-    }
+    public async Task<TodoItem?> GetByIdAsync(int id, CancellationToken ct = default) =>
+        await db.Todos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct);
 
-    public async Task<TodoItem?> GetByIdAsync(int id)
-    {
-        return await _db.Todos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
-    }
-
-    public async Task<TodoItem> CreateAsync(string title)
+    public async Task<TodoItem> CreateAsync(string title, CancellationToken ct = default)
     {
         var item = new TodoItem
         {
             Title = NormalizeTitle(title),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = clock.GetUtcNow().UtcDateTime
         };
 
-        _db.Todos.Add(item);
-        await _db.SaveChangesAsync();
+        db.Todos.Add(item);
+        await db.SaveChangesAsync(ct);
         return item;
     }
 
-    public async Task<TodoItem?> UpdateAsync(int id, string title, bool isCompleted)
+    public async Task<TodoItem?> UpdateAsync(int id, string title, bool isCompleted, CancellationToken ct = default)
     {
-        var item = await _db.Todos.FindAsync(id);
+        var item = await db.Todos.FindAsync([id], ct);
         if (item is null)
         {
             return null;
@@ -52,7 +39,7 @@ public class TodoService : ITodoService
 
         if (isCompleted && !item.IsCompleted)
         {
-            item.CompletedAt = DateTime.UtcNow;
+            item.CompletedAt = clock.GetUtcNow().UtcDateTime;
         }
         else if (!isCompleted)
         {
@@ -60,20 +47,20 @@ public class TodoService : ITodoService
         }
         item.IsCompleted = isCompleted;
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         return item;
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
     {
-        var item = await _db.Todos.FindAsync(id);
+        var item = await db.Todos.FindAsync([id], ct);
         if (item is null)
         {
             return false;
         }
 
-        _db.Todos.Remove(item);
-        await _db.SaveChangesAsync();
+        db.Todos.Remove(item);
+        await db.SaveChangesAsync(ct);
         return true;
     }
 

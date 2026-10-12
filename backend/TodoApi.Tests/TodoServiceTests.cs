@@ -1,16 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using TodoApi.Data;
 using TodoApi.Services;
+using Microsoft.Extensions.Time.Testing;
 
 namespace TodoApi.Tests;
 
 public sealed class TodoServiceTests : IDisposable
 {
     private readonly AppDbContext _db;
-    private readonly TodoService _sut; 
+    private readonly TodoService _sut;
+
+    private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 1, 15, 9, 0, 0, TimeSpan.Zero));
     public TodoServiceTests()
     {
-        var connectionString = $"Host=localhost;Port=5432;Database=todo_test_{Guid.NewGuid():N};Username=postgres";
+        var password = Environment.GetEnvironmentVariable("TODO_TEST_PG_PASSWORD") ?? "postgres";
+        var connectionString =
+            $"Host=localhost;Port=5432;Database=todo_test_{Guid.NewGuid():N};" +
+            $"Username=postgres;Password={password};Pooling=false";
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(connectionString)
@@ -18,7 +24,7 @@ public sealed class TodoServiceTests : IDisposable
 
         _db = new AppDbContext(options);
         _db.Database.EnsureCreated();
-        _sut = new TodoService(_db);
+        _sut = new TodoService(_db, _clock);
     }
 
     public void Dispose()
@@ -105,5 +111,24 @@ public sealed class TodoServiceTests : IDisposable
         var all = await _sut.GetAllAsync();
 
         Assert.Equal(new[] { "First", "Second" }, all.Select(t => t.Title));
+    }
+
+    [Fact]
+    public async Task CreateAsync_UsesTheClockForCreatedAt()
+    {
+        var item = await _sut.CreateAsync("Buy milk");
+
+        Assert.Equal(new DateTime(2026, 1, 15, 9, 0, 0), item.CreatedAt);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_MarkingComplete_StampsTheCurrentTime()
+    {
+        var created = await _sut.CreateAsync("Write tests");
+        _clock.Advance(TimeSpan.FromMinutes(30));
+
+        var updated = await _sut.UpdateAsync(created.Id, "Write tests", true);
+
+        Assert.Equal(new DateTime(2026, 1, 15, 9, 30, 0), updated!.CompletedAt);
     }
 }

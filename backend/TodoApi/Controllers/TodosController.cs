@@ -1,65 +1,42 @@
 using Microsoft.AspNetCore.Mvc;
 using TodoApi.Dtos;
-using TodoApi.Models;
 using TodoApi.Services;
 
 namespace TodoApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TodosController : ControllerBase
+public class TodosController(ITodoService todos) : ControllerBase
 {
-    private readonly ITodoService _todos;
-
-    public TodosController(ITodoService todos)
-    {
-        _todos = todos;
-    }
-
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<TodoItem>>> GetAll()
+    public async Task<ActionResult<IReadOnlyList<TodoDto>>> GetAll(CancellationToken ct)
     {
-        return Ok(await _todos.GetAllAsync());
+        var items = await todos.GetAllAsync(ct);
+        return Ok(items.Select(i => i.ToDto()).ToList());
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<TodoItem>> GetById(int id)
+    public async Task<ActionResult<TodoDto>> GetById(int id, CancellationToken ct)
     {
-        var item = await _todos.GetByIdAsync(id);
-        if (item is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(item);
+        var item = await todos.GetByIdAsync(id, ct);
+        return item is null ? NotFound() : Ok(item.ToDto());
     }
 
     [HttpPost]
-    public async Task<ActionResult<TodoItem>> Create(CreateTodoRequest request)
+    public async Task<ActionResult<TodoDto>> Create(CreateTodoRequest request, CancellationToken ct)
     {
-        var created = await _todos.CreateAsync(request.Title);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        var created = await todos.CreateAsync(request.Title, ct);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created.ToDto());
     }
 
     [HttpPut("{id:int}")]
-    public async Task<ActionResult<TodoItem>> Update(int id, UpdateTodoRequest request)
+    public async Task<ActionResult<TodoDto>> Update(int id, UpdateTodoRequest request, CancellationToken ct)
     {
-        var updated = await _todos.UpdateAsync(id, request.Title, request.IsCompleted);
-        if (updated is null)
-        {
-            return NotFound();
-        }
-        return Ok(updated);
+        var updated = await todos.UpdateAsync(id, request.Title, request.IsCompleted, ct);
+        return updated is null ? NotFound() : Ok(updated.ToDto());
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var deleted = await _todos.DeleteAsync(id);
-        if(!deleted)
-        {
-            return NotFound();
-        }
-        return NoContent();
-    }
+    public async Task<IActionResult> Delete(int id, CancellationToken ct) =>
+        await todos.DeleteAsync(id, ct) ? NoContent() : NotFound();
 }
