@@ -1,0 +1,28 @@
+@baseUrl = http://localhost:5080
+
+### List all
+GET {{baseUrl}}/api/todos
+
+### Create
+POST {{baseUrl}}/api/todos
+Content-Type: application/json
+
+{ "title": "Learn .NET" }
+
+### Get one
+GET {{baseUrl}}/api/todos/1
+
+### Update
+PUT {{baseUrl}}/api/todos/1
+Content-Type: application/json
+
+{ "title": "Learn .NET", "isCompleted": true }
+
+### Delete
+DELETE {{baseUrl}}/api/todos/1
+
+### Invalid (expect 400)
+POST {{baseUrl}}/api/todos
+Content-Type: application/json
+
+{ "title": "" }
