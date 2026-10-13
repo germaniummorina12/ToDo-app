@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>f9cc263f-351a-4c72-8ff0-b05950a2e264</UserSecretsId>
+	  <NuGetAudit>true</NuGetAudit>
+	  <NuGetAuditMode>all</NuGetAuditMode>
+	  <NuGetAuditLevel>low</NuGetAuditLevel>
+	  <WarningsAsErrors>$(WarningsAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

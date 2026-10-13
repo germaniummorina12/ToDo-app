@@ -17,6 +17,7 @@ import { TodoStore } from '../todo-store';
         [formControl]="title"
         placeholder="What needs doing?"
         maxlength="200"
+        (keydown.enter)="add($event)"
       />
       <button type="submit" [disabled]="title.invalid">Add</button>
     </form>
